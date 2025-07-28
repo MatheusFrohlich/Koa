@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista de Tarefas</title>
+</head>
+<body>
+  <h1>Minha Lista de Tarefas</h1>
+
+  <form id="formulario">
+    <input type="text" id="titulo" placeholder="Título" required>
+    <input type="text" id="descricao" placeholder="Descrição">
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <ul id="listaTarefas"></ul>
+
+  <script>
+    const API = 'http://localhost:3000/tarefas';
+    const TOKEN = 'Bearer meutoken123';
+
+    async function carregarTarefas() {
+      const resposta = await fetch(API);
+      const tarefas = await resposta.json();
+
+      const lista = document.getElementById('listaTarefas');
+      lista.innerHTML = '';
+      tarefas.forEach(tarefa => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <strong>${tarefa.titulo}</strong>: ${tarefa.descricao}
+          <button onclick="excluirTarefa(${tarefa.id})">🗑</button>
+          <button onclick="editarTarefa(${tarefa.id}, '${tarefa.titulo}', '${tarefa.descricao}')">✏</button>
+        `;
+        lista.appendChild(li);
+      });
+    }
+
+    document.getElementById('formulario').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById('titulo').value;
+      const descricao = document.getElementById('descricao').value;
+
+      await fetch(API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': TOKEN
+        },
+        body: JSON.stringify({ titulo, descricao })
+      });
+
+      document.getElementById('formulario').reset();
+      carregarTarefas();
+    });
+
+    async function excluirTarefa(id) {
+      await fetch(`${API}/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': TOKEN }
+      });
+      carregarTarefas();
+    }
+
+    async function editarTarefa(id, tituloAntigo, descricaoAntiga) {
+      const novoTitulo = prompt('Novo título:', tituloAntigo);
+      const novaDescricao = prompt('Nova descrição:', descricaoAntiga);
+      if (novoTitulo !== null) {
+        await fetch(`${API}/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': TOKEN
+          },
+          body: JSON.stringify({ titulo: novoTitulo, descricao: novaDescricao })
+        });
+        carregarTarefas();
+      }
+    }
+
+    carregarTarefas();
+  </script>
+</body>
+</html>
